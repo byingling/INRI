@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0A0907" />
+  <meta name="description" content="INRI — Daily devotion, inspiration, morning & night prayers, and the King James Bible. Personal spiritual companion." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <title>INRI — Daily Faith</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- Splash Screen -->
+  <div id="splash" class="splash">
+    <img src="icons/splash-inri.jpg" alt="INRI" class="splash-image" />
+    <div class="splash-content">
+      <div class="splash-bar"><div class="splash-progress"></div></div>
+    </div>
+  </div>
+
+  <div id="app" class="app-hidden">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo" id="logo-btn">
+        <span class="logo-text">INRI</span>
+      </div>
+      <h1 class="app-title" id="page-title">Today</h1>
+      <button class="menu-btn" id="menu-btn" aria-label="Menu">☰</button>
+    </header>
+
+
+    <!-- Side Navigation -->
+    <nav class="side-nav" id="side-nav">
+      <div class="nav-header">
+        <span class="nav-logo">INRI</span>
+        <button class="close-nav" id="close-nav">×</button>
+      </div>
+      <ul>
+        <li data-page="today" class="active">Today</li>
+        <li data-page="devotion">Daily Devotion</li>
+        <li data-page="inspiration">Daily Inspiration</li>
+        <li data-page="morning">Morning Prayer</li>
+        <li data-page="night">Night Prayer</li>
+        <li data-page="bible">Bible</li>
+        <li data-page="plans">Reading Plans</li>
+        <li data-page="topics">Topics</li>
+        <li data-page="works">Works of Jesus</li>
+        <li data-page="meals">Biblical Meals</li>
+        <li data-page="plants">Biblical Plants</li>
+        <li data-page="study">Study</li>
+        <li data-page="hymns">Hymns</li>
+        <li data-page="prayers">Prayer List</li>
+        <li data-page="bookmarks">Bookmarks</li>
+        <li data-page="journal">My Journal</li>
+        <li data-page="settings">Settings</li>
+        <li data-page="about">About</li>
+      </ul>
+    </nav>
+    <div class="nav-overlay" id="nav-overlay"></div>
+
+    <!-- Main Content -->
+    <main class="content" id="content">
+      <!-- Pages will be injected here -->
+    </main>
+
+    <!-- Bottom Nav (mobile) -->
+    <nav class="bottom-nav">
+      <button data-page="today" class="nav-item active">
+        <span class="icon">☀️</span>
+        <span>Today</span>
+      </button>
+      <button data-page="devotion" class="nav-item">
+        <span class="icon">📖</span>
+        <span>Devotion</span>
+      </button>
+      <button data-page="bible" class="nav-item">
+        <span class="icon">✝️</span>
+        <span>Bible</span>
+      </button>
+      <button data-page="journal" class="nav-item">
+        <span class="icon">✍️</span>
+        <span>Journal</span>
+      </button>
+      <button data-page="more" class="nav-item" id="more-btn">
+        <span class="icon">⋯</span>
+        <span>More</span>
+      </button>
+    </nav>
+  </div>
+
+  <script src="js/storage.js"></script>
+  <script src="js/content.js"></script>
+  <script src="js/library.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(console.error);
+    }
+  </script>
+</body>
+</html>

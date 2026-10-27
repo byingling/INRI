@@ -1,0 +1,50 @@
+# INRI — Daily Faith
+
+A Progressive Web App for daily devotion, inspiration, morning & night prayers, Bible reading (KJV), and personal journaling.
+
+**INRI** = *Iesus Nazarenus, Rex Iudaeorum*  
+(“Jesus of Nazareth, King of the Jews”)
+
+## Features
+
+- 7-second splash screen with the INRI artwork
+- Daily Verse, Inspiration, and Devotion (28 rotating days)
+- Morning & Night prayers
+- Full King James Version Bible reader
+- Private journal (stored only on your device)
+- Works offline as a Progressive Web App
+- Themes include spiritual warfare, marriage & relationships, gratitude, peace, hope, and more
+
+## Live Demo
+
+Once you enable GitHub Pages, your app will be available at:
+
+`https://YOUR-USERNAME.github.io/REPO-NAME/`
+
+## How to Deploy on GitHub Pages
+
+1. Create a new repository on GitHub (public is easiest for free Pages).
+2. Upload all the files from this folder to the repository.
+3. Go to **Settings → Pages**.
+4. Under **Source**, select **Deploy from a branch**.
+5. Choose the `main` (or `master`) branch and `/ (root)` folder.
+6. Click **Save**.
+7. Wait 1–2 minutes, then open the URL GitHub shows you.
+
+## Local Development
+
+```bash
+npx serve .
+# or
+python3 -m http.server 8080
+```
+
+Then open `http://localhost:3000` or `http://localhost:8080`.
+
+## Bible Text
+
+King James Version (public domain) via the free [Midvash Bible API](https://api.midvash.com).
+
+## Privacy
+
+Your journal entries never leave your device (localStorage only).
