@@ -360,17 +360,17 @@ function openChapter(bookId, chapter) {
 }
 
 function renderPrayer(title, text) {
-  // text available for speak
-
+  const key = title === 'Night Prayer' ? 'night' : 'morning';
+  const paras = String(text).split(/\n\s*\n/).map(function(p) { return '<p class="prayer-text prayer-para">' + p + '</p>'; }).join('');
   return `
     <div class="card">
       <div class="date-badge">${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</div>
       <h2>${title}</h2>
-      <p class="prayer-text" style="font-size:1.1rem;line-height:1.75;white-space:pre-line">${text}</p>
+      <p class="reflection prayer-ref">Praying with ${getTodayContent().reference}</p>
+      <div class="prayer-body">${paras}</div>
       <div class="btn-group">
-        <button class="btn btn-outline" onclick="speakText(\`${text.replace(/`/g, '').replace(/\\/g, '')}\`)">Listen</button>
-
-        <button class="btn btn-outline" onclick="shareText(\`${text.replace(/`/g, '')}\`, '${title}')">Share</button>
+        <button class="btn btn-outline" onclick="Narrator.play([{ label: '${title}', text: getTodayContent().${key} }], { title: '${title}' })">Listen</button>
+        <button class="btn btn-outline" onclick="shareText(getTodayContent().${key}, '${title}')">Share</button>
       </div>
     </div>
   `;
