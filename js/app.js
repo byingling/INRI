@@ -173,11 +173,12 @@ function renderToday(data) {
       <h2>Verse of the Day</h2>
       <p class="verse">“${data.verse}”</p>
       <p class="reference">— ${data.reference}</p>
+      ${renderVerseStudy(data, false)}
     </div>
 
     <div class="card">
       <h2>Daily Inspiration</h2>
-      <p class="reflection">${data.inspiration}</p>
+      ${data.deep ? '<h3 class="insp-title">' + data.deep.title + '</h3><p class="reflection">' + data.deep.body[0] + '</p><div class="btn-group" style="margin-top:14px"><button class="btn btn-outline" onclick="navigate(\'inspiration\')">Continue reading →</button></div>' : '<p class="reflection">' + data.inspiration + '</p>'}
     </div>
 
     <div class="quick-links">
@@ -221,14 +222,7 @@ function renderToday(data) {
       } else {
         slot.innerHTML = '<div class="card"><h2>Continue Plan</h2><p class="reflection">' + info.plan.title + ' · Day ' + info.next.day + ': ' + info.next.ref + ' (' + info.doneCount + '/' + info.total + ')</p><div class="btn-group"><button class="btn" id="continue-plan-btn">Continue Reading</button></div></div>';
         document.getElementById('continue-plan-btn').onclick = function() {
-          currentBook = info.next.book;
-          currentChapter = info.next.chapter;
-          navigate('bible');
-          setTimeout(function() {
-            var bs = document.getElementById('book-select');
-            if (bs) { bs.value = currentBook; bs.dispatchEvent(new Event('change')); }
-            setTimeout(function() { loadChapter(currentBook, currentChapter); }, 120);
-          }, 80);
+          openChapter(info.next.book, info.next.chapter);
         };
       }
     }
@@ -257,15 +251,90 @@ function renderDevotion(data) {
 }
 
 function renderInspiration(data) {
-  return `
+  const dateBadge = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  if (!data.deep) {
+    return `
     <div class="card">
-      <div class="date-badge">${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</div>
+      <div class="date-badge">${dateBadge}</div>
       <h2>Daily Inspiration</h2>
       <p class="verse">“${data.verse}”</p>
       <p class="reference">— ${data.reference}</p>
       <p class="reflection" style="margin-top:18px">${data.inspiration}</p>
+    </div>`;
+  }
+  const d = data.deep;
+  return `
+    <div class="card">
+      <div class="date-badge">${dateBadge}</div>
+      <h2>Daily Inspiration</h2>
+      <p class="verse">“${data.verse}”</p>
+      <p class="reference">— ${data.reference}</p>
+      <h3 class="insp-title">${d.title}</h3>
+      ${d.body.map(function(p) { return '<p class="reflection insp-para">' + p + '</p>'; }).join('')}
+      <div class="insp-box">
+        <div class="insp-label">Live it today</div>
+        <p class="reflection">${d.apply}</p>
+      </div>
+      <div class="insp-box">
+        <div class="insp-label">Reflect</div>
+        <p class="reflection" style="font-style:italic">${d.reflect}</p>
+      </div>
+      <div class="btn-group" style="margin-top:16px">
+        <button class="btn btn-outline" onclick="speakText(getTodayContent().deep.title + '. ' + getTodayContent().deep.body.join(' '))">Listen</button>
+        <button class="btn btn-outline" onclick="addBookmark(getTodayContent().verse, getTodayContent().reference)">♥ Save verse</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Study the Verse</h2>
+      ${renderVerseStudy(data, true)}
     </div>
   `;
+}
+
+// Background, key words and cross-references for the day's verse.
+// collapsible=false on Today (wrapped in <details>), true = always open.
+function renderVerseStudy(data, open) {
+  const st = data.study;
+  if (!st) return '';
+  let inner = '<div class="study-block"><div class="insp-label">Background</div><p class="reflection">' + st.context + '</p></div>';
+  if (st.words && st.words.length) {
+    inner += '<div class="study-block"><div class="insp-label">Key words</div>';
+    st.words.forEach(function(w) {
+      inner += '<div class="word-note"><div class="word-head"><span class="word-kjv">' + w.kjv + '</span> <span class="word-orig">' + w.orig + '</span></div><p class="reflection">' + w.note + '</p></div>';
+    });
+    inner += '</div>';
+  }
+  if (st.refs && st.refs.length) {
+    inner += '<div class="study-block"><div class="insp-label">See also</div><div class="ref-chips">';
+    st.refs.forEach(function(r) {
+      inner += '<button class="ref-chip" onclick="openRef(\'' + r.replace(/'/g, "\\'") + '\')">' + r + '</button>';
+    });
+    inner += '</div></div>';
+  }
+  if (open) return inner;
+  return '<details class="verse-study"><summary>Study this verse</summary>' + inner + '</details>';
+}
+
+// Open a reference like "Lamentations 3:22-23" in the Bible reader
+function openRef(ref) {
+  const m = ref.match(/^(.+?)\s+(\d+)/);
+  if (!m) return;
+  const want = m[1].toLowerCase();
+  const book = BIBLE_BOOKS.find(function(b) {
+    const n = b.name.toLowerCase();
+    return n === want || n === want + 's' || n.replace(/s$/, '') === want;
+  });
+  if (!book) { showToast('Could not open ' + ref); return; }
+  openChapter(book.id, parseInt(m[2], 10));
+}
+
+// Jump straight to a book + chapter in the Bible reader.
+// navigate('bible') already selects the current book/chapter and loads it;
+// firing a 'change' on the book select afterwards would reset the chapter to 1.
+function openChapter(bookId, chapter) {
+  currentBook = bookId;
+  currentChapter = chapter;
+  navigate('bible');
 }
 
 function renderPrayer(title, text) {
@@ -784,22 +853,7 @@ function setupPlans() {
     btn.addEventListener('click', function(e) {
       e.preventDefault();
       const row = this.closest('.plan-day');
-      currentBook = row.dataset.book;
-      currentChapter = parseInt(row.dataset.chapter, 10);
-      navigate('bible');
-      // After bible page loads, load the chapter
-      setTimeout(function() {
-        const bookSelect = document.getElementById('book-select');
-        const chapterSelect = document.getElementById('chapter-select');
-        if (bookSelect) {
-          bookSelect.value = currentBook;
-          bookSelect.dispatchEvent(new Event('change'));
-        }
-        setTimeout(function() {
-          if (chapterSelect) chapterSelect.value = String(currentChapter);
-          loadChapter(currentBook, currentChapter);
-        }, 100);
-      }, 80);
+      openChapter(row.dataset.book, parseInt(row.dataset.chapter, 10));
     });
   });
 }

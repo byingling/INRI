@@ -8,7 +8,9 @@ A Progressive Web App for daily devotion, inspiration, morning & night prayers, 
 ## Features
 
 - 7-second splash screen with the INRI artwork
-- Daily Verse, Inspiration, and Devotion (28 rotating days)
+- Daily Verse, Inspiration, and Devotion (53 rotating days)
+- Verse study for every day: background, Hebrew/Greek key words, and tappable cross-references
+- Long-form daily inspiration with a practical step and a reflection question
 - Morning & Night prayers
 - Full King James Version Bible reader
 - Private journal (stored only on your device)
@@ -17,9 +19,7 @@ A Progressive Web App for daily devotion, inspiration, morning & night prayers, 
 
 ## Live Demo
 
-Once you enable GitHub Pages, your app will be available at:
-
-`https://YOUR-USERNAME.github.io/REPO-NAME/`
+https://byingling.github.io/INRI/
 
 ## How to Deploy on GitHub Pages
 

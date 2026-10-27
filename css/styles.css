@@ -858,3 +858,54 @@ select, input[type="text"] {
 .recipe-list { margin: 8px 0 0 1.1em; padding: 0; color: var(--text-muted); line-height: 1.55; }
 .recipe-list li { margin-bottom: 4px; }
 .meal-card h3 { font-size: 0.95rem; }
+
+/* ---- Deeper verse study & daily inspiration ---- */
+.insp-title { margin-top: 18px; font-size: 1.15rem; }
+.insp-para { margin-bottom: 14px; }
+.insp-box {
+  background: var(--bg-elevated);
+  border-left: 3px solid var(--gold);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 14px;
+}
+.insp-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 6px;
+  font-family: var(--font-sans);
+}
+.verse-study {
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.verse-study summary {
+  cursor: pointer;
+  color: var(--gold);
+  font-family: var(--font);
+  font-size: 0.98rem;
+  padding: 6px 0;
+  list-style: none;
+}
+.verse-study summary::-webkit-details-marker { display: none; }
+.verse-study summary::before { content: '▸ '; }
+.verse-study[open] summary::before { content: '▾ '; }
+.study-block { margin-top: 14px; }
+.word-note { margin-bottom: 12px; }
+.word-head { margin-bottom: 3px; }
+.word-kjv { color: var(--gold-light); font-family: var(--font); font-weight: bold; }
+.word-orig { color: var(--gold-dim); font-style: italic; font-size: 0.9rem; }
+.ref-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ref-chip {
+  background: transparent;
+  border: 1px solid var(--gold-dim);
+  color: var(--gold-light);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.ref-chip:active { background: var(--bg-elevated); }
