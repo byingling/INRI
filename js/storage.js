@@ -27,10 +27,11 @@ function getStreak() {
   return STORAGE.get('streak', { count: 0, lastDate: null });
 }
 function updateStreak() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateKey();
   let s = getStreak();
   if (s.lastDate === today) return s;
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const y = new Date(); y.setDate(y.getDate() - 1);
+  const yesterday = localDateKey(y);
   if (s.lastDate === yesterday) s.count += 1;
   else s.count = 1;
   s.lastDate = today;

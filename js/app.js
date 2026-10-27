@@ -56,6 +56,7 @@ function setActiveNav(page) {
 }
 
 function navigate(page) {
+  if (page === 'walk') { Walk.open(); return; }
   currentPage = page;
   setActiveNav(page);
   const titles = {
@@ -77,11 +78,13 @@ function navigate(page) {
     bookmarks: 'Bookmarks',
     journal: 'My Journal',
     settings: 'Settings',
-    about: 'About INRI'
+    about: 'About INRI',
+    memorize: 'Memorize'
   };
   pageTitle.textContent = titles[page] || 'INRI';
   renderPage(page);
   window.scrollTo(0, 0);
+  if (typeof afterNavigate === 'function') afterNavigate(page);
 }
 
 // ---------- Renderers ----------
@@ -152,6 +155,10 @@ function renderPage(page) {
     case 'about':
       contentEl.innerHTML = renderAbout();
       break;
+    case 'memorize':
+      contentEl.innerHTML = renderMemorize();
+      setupMemorize();
+      break;
     default:
       contentEl.innerHTML = '<p>Page not found.</p>';
   }
@@ -168,10 +175,21 @@ function renderToday(data) {
       <p style="margin-top:4px;font-size:0.85rem;color:var(--gold-dim)">Jesus of Nazareth, King of the Jews</p>
     </div>
 
+    ${renderSeasonBanner()}
+
+    <div class="card walk-cta${walkDoneToday() ? ' done' : ''}" onclick="Walk.open()" role="button" tabindex="0">
+      <div class="walk-cta-icon">✝</div>
+      <div class="walk-cta-text">
+        <div class="walk-cta-title">${walkDoneToday() ? 'Walk completed today ✓' : 'Begin your Daily Walk'}</div>
+        <div class="walk-cta-sub">${walkDoneToday() ? 'Walk through it again any time' : 'Stillness, the Word, reflection & prayer · about 10 minutes'}</div>
+      </div>
+      <div class="walk-cta-go">→</div>
+    </div>
+
     <div class="card">
       <div class="date-badge">${dateStr}</div>
       <h2>Verse of the Day</h2>
-      <p class="verse">“${data.verse}”</p>
+      <p class="verse reveal">“${data.verse}”</p>
       <p class="reference">— ${data.reference}</p>
       ${renderVerseStudy(data, false)}
     </div>
@@ -180,6 +198,8 @@ function renderToday(data) {
       <h2>Daily Inspiration</h2>
       ${data.deep ? '<h3 class="insp-title">' + data.deep.title + '</h3><p class="reflection">' + data.deep.body[0] + '</p><div class="btn-group" style="margin-top:14px"><button class="btn btn-outline" onclick="navigate(\'inspiration\')">Continue reading →</button></div>' : '<p class="reflection">' + data.inspiration + '</p>'}
     </div>
+
+    ${renderLocationCard(data)}
 
     <div class="quick-links">
       <div class="quick-link" onclick="navigate('devotion')">
@@ -201,7 +221,8 @@ function renderToday(data) {
     </div>
     <div class="card">
       <div class="btn-group">
-        <button class="btn btn-outline" onclick="speakText(getTodayContent().verse + '. ' + getTodayContent().reference)">Listen</button>
+        <button class="btn" onclick="listenToToday()">▶ Listen to today</button>
+        <button class="btn btn-outline" onclick="openMemorize(getTodayContent().verse, getTodayContent().reference)">Memorize</button>
         <button class="btn btn-outline" onclick="shareText(getTodayContent().verse, getTodayContent().reference)">Share</button>
         <button class="btn btn-outline" onclick="addBookmark(getTodayContent().verse, getTodayContent().reference)">♥ Save</button>
         <button class="btn btn-outline" onclick="shareVerseCard()">Share card</button>
@@ -288,6 +309,7 @@ function renderInspiration(data) {
       <h2>Study the Verse</h2>
       ${renderVerseStudy(data, true)}
     </div>
+    ${renderLocationCard(data)}
   `;
 }
 
@@ -692,7 +714,7 @@ function setupJournal() {
   const listEl = document.getElementById('journal-list');
 
   // Load today’s draft if any
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayKey = localDateKey();
   const stored = JSON.parse(localStorage.getItem('inri-journal') || '{}');
   if (stored[todayKey]) {
     textarea.value = stored[todayKey];
@@ -958,20 +980,10 @@ function playTopicAudio(verses, btn) {
   next();
 }
 
-function speakText(text) {
-  if (!window.speechSynthesis) {
-    alert('Speech is not supported in this browser.');
-    return;
-  }
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.rate = 0.9;
-  u.pitch = 1;
-  window.speechSynthesis.speak(u);
-}
+// speakText() now lives in narration.js (uses the Narrator and its player bar)
 
 function resetPrayersIfNewDay() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateKey();
   const last = STORAGE.get('prayersResetDate', null);
   if (last === today) return;
   const list = getPrayers().map(function(p) { return Object.assign({}, p, { prayedToday: false }); });
@@ -1010,7 +1022,8 @@ function renderSettings() {
   const streak = getStreak();
   const theme = getTheme();
   const ver = getBibleVersion();
-  return '<div class="card"><h2>Reading Streak</h2><p class="verse" style="border:none;padding:0;font-size:2.2rem;text-align:center">' + streak.count + ' day' + (streak.count === 1 ? '' : 's') + '</p><p class="reflection" style="text-align:center">Open the app each day to build your streak.</p></div>' +
+  return '<div id="immersive-settings"></div>' +
+    '<div class="card"><h2>Reading Streak</h2><p class="verse" style="border:none;padding:0;font-size:2.2rem;text-align:center">' + streak.count + ' day' + (streak.count === 1 ? '' : 's') + '</p><p class="reflection" style="text-align:center">Open the app each day to build your streak.</p></div>' +
     '<div class="card"><h2>Font Size</h2><div class="btn-group">' +
     '<button class="btn ' + (size==='small'?'':'btn-outline') + '" data-size="small">Small</button>' +
     '<button class="btn ' + (size==='medium'?'':'btn-outline') + '" data-size="medium">Medium</button>' +
@@ -1080,7 +1093,7 @@ function setupSettings() {
   var cd = document.getElementById('clear-data-btn');
   if (cd) cd.addEventListener('click', function() {
     if (confirm('Clear ALL local data? This cannot be undone.')) {
-      ['bookmarks','verseNotes','fontSize','streak','planProgress','prayers','collections','chapterCache','onboarded','activePlan','theme','bibleVersion','journal','highlights','customPlans','a11y','prayersResetDate','installDismissed'].forEach(function(k) {
+      ['bookmarks','verseNotes','fontSize','streak','planProgress','prayers','collections','chapterCache','onboarded','activePlan','theme','bibleVersion','journal','highlights','customPlans','a11y','prayersResetDate','installDismissed','ambient','narration','memorized','walks'].forEach(function(k) {
         localStorage.removeItem('inri-' + k);
       });
       localStorage.removeItem('inri-journal');

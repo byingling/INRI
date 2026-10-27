@@ -29,7 +29,10 @@
         <span class="logo-text">INRI</span>
       </div>
       <h1 class="app-title" id="page-title">Today</h1>
-      <button class="menu-btn" id="menu-btn" aria-label="Menu">☰</button>
+      <div class="header-actions">
+        <button class="ambient-btn" id="ambient-btn" aria-label="Ambient sound" onclick="toggleAmbientPanel()">♪</button>
+        <button class="menu-btn" id="menu-btn" aria-label="Menu">☰</button>
+      </div>
     </header>
 
 
@@ -41,6 +44,7 @@
       </div>
       <ul>
         <li data-page="today" class="active">Today</li>
+        <li data-page="walk">Daily Walk</li>
         <li data-page="devotion">Daily Devotion</li>
         <li data-page="inspiration">Daily Inspiration</li>
         <li data-page="morning">Morning Prayer</li>
@@ -55,6 +59,7 @@
         <li data-page="beyond">Beyond the Canon</li>
         <li data-page="hymns">Hymns</li>
         <li data-page="prayers">Prayer List</li>
+        <li data-page="memorize">Memorize</li>
         <li data-page="bookmarks">Bookmarks</li>
         <li data-page="journal">My Journal</li>
         <li data-page="settings">Settings</li>
@@ -96,6 +101,12 @@
   <script src="js/storage.js"></script>
   <script src="js/content.js"></script>
   <script src="js/daily-depth.js"></script>
+  <script src="js/calendar.js"></script>
+  <script src="js/places.js"></script>
+  <script src="js/atmosphere.js"></script>
+  <script src="js/narration.js"></script>
+  <script src="js/memorize.js"></script>
+  <script src="js/walk.js"></script>
   <script src="js/library.js"></script>
   <script src="js/app.js"></script>
   <script>

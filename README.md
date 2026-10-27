@@ -11,6 +11,13 @@ A Progressive Web App for daily devotion, inspiration, morning & night prayers, 
 - Daily Verse, Inspiration, and Devotion (53 rotating days)
 - Verse study for every day: background, Hebrew/Greek key words, and tappable cross-references
 - Long-form daily inspiration with a practical step and a reflection question
+- **Daily Walk**: a full-screen guided time — stillness & breathing, the verse, study, map, inspiration, prayer, journal, and a closing blessing (with optional guided audio)
+- **Church year**: Advent, Christmas, Lent, Holy Week, Easter, Pentecost and Thanksgiving get fitting readings, with a season banner
+- **On location**: a map of where each day's passage happened, plus a timeline of biblical history
+- **Listen to today**: the verse, inspiration and prayer read aloud with the best voice on your device
+- **Ambient sound**: rain, fireside, Galilee shore, or a still pad (generated in the browser, nothing to download)
+- **Memorize**: hide the verse step by step, then check yourself from memory
+- Light that follows the time of day (dawn, day, evening, night)
 - Morning & Night prayers
 - Full King James Version Bible reader
 - Private journal (stored only on your device)

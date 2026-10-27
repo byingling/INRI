@@ -909,3 +909,236 @@ select, input[type="text"] {
   cursor: pointer;
 }
 .ref-chip:active { background: var(--bg-elevated); }
+
+/* =====================================================================
+   Immersive features: atmosphere, season, walk, map, narrator, memorize
+   ===================================================================== */
+
+/* ---- Time-of-day light (a soft glow behind the app) ---- */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  transition: background 2s ease;
+}
+#app { z-index: 1; }
+[data-tod="dawn"] body::before {
+  background: radial-gradient(120% 60% at 50% -10%, rgba(232, 140, 90, 0.22), transparent 70%),
+              radial-gradient(80% 40% at 100% 0%, rgba(240, 200, 120, 0.10), transparent 70%);
+}
+[data-tod="day"] body::before {
+  background: radial-gradient(120% 55% at 50% -10%, rgba(212, 168, 75, 0.10), transparent 70%);
+}
+[data-tod="evening"] body::before {
+  background: radial-gradient(120% 60% at 50% -10%, rgba(200, 95, 40, 0.20), transparent 70%),
+              radial-gradient(90% 50% at 0% 100%, rgba(120, 50, 90, 0.10), transparent 70%);
+}
+[data-tod="night"] body::before {
+  background: radial-gradient(120% 60% at 50% -10%, rgba(60, 80, 160, 0.20), transparent 70%),
+              radial-gradient(60% 35% at 50% 105%, rgba(230, 150, 60, 0.12), transparent 70%);
+}
+[data-theme="parchment"][data-tod="dawn"] body::before { background: radial-gradient(120% 60% at 50% -10%, rgba(230, 150, 110, 0.25), transparent 70%); }
+[data-theme="parchment"][data-tod="evening"] body::before { background: radial-gradient(120% 60% at 50% -10%, rgba(200, 120, 60, 0.20), transparent 70%); }
+[data-theme="parchment"][data-tod="night"] body::before { background: radial-gradient(120% 60% at 50% -10%, rgba(90, 100, 160, 0.18), transparent 70%); }
+
+/* ---- Gentle word-by-word verse reveal ---- */
+.verse .rw { opacity: 0; animation: rwIn 0.7s ease forwards; }
+@keyframes rwIn { from { opacity: 0; filter: blur(3px); } to { opacity: 1; filter: blur(0); } }
+
+/* ---- Header actions & ambient sound ---- */
+.header-actions { display: flex; align-items: center; gap: 2px; }
+.ambient-btn {
+  background: none; border: 1px solid transparent; color: var(--gold-dim);
+  font-size: 1.25rem; width: 38px; height: 38px; border-radius: 50%; cursor: pointer;
+}
+.ambient-btn.on { color: var(--gold); border-color: var(--gold-dim); box-shadow: 0 0 12px rgba(212, 168, 75, 0.35); }
+.ambient-panel {
+  position: fixed; top: 64px; right: max(12px, calc(50% - 348px)); z-index: 120;
+  width: min(320px, calc(100vw - 24px));
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+  padding: 14px; box-shadow: var(--shadow);
+}
+.ambient-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+.ambient-choice {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-muted);
+  border-radius: 12px; padding: 10px 6px; font-size: 0.8rem; cursor: pointer;
+}
+.ambient-choice span { font-size: 1.3rem; }
+.ambient-choice.active { border-color: var(--gold); color: var(--gold-light); }
+.ambient-choice.small { padding: 7px 4px; font-size: 0.72rem; }
+.ambient-choice.small span { font-size: 1.05rem; }
+.ambient-vol { display: flex; align-items: center; gap: 10px; margin-top: 12px; color: var(--text-muted); font-size: 0.85rem; }
+.ambient-vol input { flex: 1; accent-color: var(--gold); }
+
+/* ---- Church-year banner ---- */
+.season-banner {
+  display: flex; gap: 12px; align-items: flex-start;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-left: 4px solid var(--season); border-radius: 12px;
+  padding: 12px 14px; margin-bottom: 18px;
+}
+.season-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--season); margin-top: 6px; flex-shrink: 0; box-shadow: 0 0 10px var(--season); }
+.season-label { color: var(--gold-light); font-family: var(--font); font-size: 1rem; }
+.season-note { color: var(--text-muted); font-size: 0.85rem; line-height: 1.45; margin-top: 2px; }
+
+/* ---- Daily Walk call to action ---- */
+.walk-cta {
+  display: flex; align-items: center; gap: 14px; cursor: pointer;
+  background: linear-gradient(135deg, rgba(212, 168, 75, 0.18), rgba(212, 168, 75, 0.04)), var(--bg-card);
+  border: 1px solid var(--gold-dim);
+}
+.walk-cta:active { transform: scale(0.99); }
+.walk-cta-icon {
+  width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; color: var(--bg); background: linear-gradient(135deg, var(--gold-dim), var(--gold));
+}
+.walk-cta-text { flex: 1; }
+.walk-cta-title { font-family: var(--font); color: var(--gold-light); font-size: 1.1rem; }
+.walk-cta-sub { color: var(--text-muted); font-size: 0.85rem; margin-top: 2px; }
+.walk-cta-go { color: var(--gold); font-size: 1.4rem; }
+.walk-cta.done { border-color: var(--border); background: var(--bg-card); }
+
+/* ---- On location: map + timeline ---- */
+.loc-when { margin-bottom: 12px; }
+.map-wrap { border-radius: 10px; overflow: hidden; }
+.geo-map { display: block; width: 100%; height: auto; max-height: 460px; }
+.geo-land { fill: #2a2117; }
+.geo-sea, .geo-island { stroke: #4a5d66; stroke-width: 0.8; }
+.geo-sea { fill: #1d3440; }
+.geo-island { fill: #2a2117; }
+.geo-river { fill: none; stroke: #3c6475; stroke-width: 1.4; stroke-linejoin: round; }
+.geo-region { font-family: var(--font); font-size: 11px; letter-spacing: 2.5px; fill: #8a7350; text-anchor: middle; }
+.geo-region.small { font-size: 9px; letter-spacing: 2px; }
+.geo-ctx { font-family: var(--font); font-size: 9.5px; font-style: italic; fill: #8a7350; }
+.geo-ctx-dot { fill: #8a7350; }
+.geo-dot { fill: var(--gold); stroke: #0a0907; stroke-width: 1.5; }
+.geo-pulse { fill: none; stroke: var(--gold); stroke-width: 1.5; transform-box: fill-box; transform-origin: center; animation: geoPulse 2.4s ease-out infinite; }
+@keyframes geoPulse { from { transform: scale(1); opacity: 0.9; } to { transform: scale(3.2); opacity: 0; } }
+.geo-place { font-family: var(--font); font-size: 12.5px; font-weight: bold; fill: var(--gold-light); paint-order: stroke; stroke: #0a0907; stroke-width: 3px; }
+.geo-route { fill: none; stroke: var(--gold); stroke-width: 1.6; stroke-dasharray: 5 4; }
+.geo-arrowhead { fill: var(--gold); }
+.geo-frame { fill: none; stroke: var(--border); }
+[data-theme="parchment"] .geo-land, [data-theme="parchment"] .geo-island { fill: #e3d2ad; }
+[data-theme="parchment"] .geo-sea { fill: #9fbac6; }
+[data-theme="parchment"] .geo-sea, [data-theme="parchment"] .geo-island { stroke: #7f9aa6; }
+[data-theme="parchment"] .geo-river { stroke: #7f9aa6; }
+[data-theme="parchment"] .geo-place { stroke: #faf6eb; fill: #5a3e10; }
+[data-theme="parchment"] .geo-dot { stroke: #faf6eb; }
+.loc-legend { color: var(--text-muted); font-size: 0.88rem; margin-top: 10px; line-height: 1.5; }
+.loc-legend strong { color: var(--gold-light); font-weight: normal; }
+.era-strip { display: flex; gap: 3px; margin-top: 14px; }
+.era { flex: 1; height: 8px; border-radius: 4px; background: var(--bg-elevated); border: 1px solid var(--border); position: relative; }
+.era.active { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 10px rgba(212, 168, 75, 0.5); }
+.era-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.era-caption { margin-top: 6px; color: var(--gold); font-size: 0.82rem; letter-spacing: 0.04em; }
+.loc-note { margin-top: 10px; color: var(--gold-dim); font-size: 0.75rem; font-style: italic; }
+
+/* ---- Narrator player bar ---- */
+.narrator-bar {
+  position: fixed; left: 50%; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); z-index: 130;
+  transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+  width: min(560px, calc(100vw - 20px));
+  display: flex; align-items: center; gap: 4px;
+  background: var(--bg-elevated); border: 1px solid var(--gold-dim); border-radius: 16px;
+  padding: 8px 10px 8px 14px; box-shadow: var(--shadow);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.narrator-bar.show { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; }
+.walk-open .narrator-bar { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+.nb-text { flex: 1; min-width: 0; }
+.nb-title { color: var(--gold-light); font-family: var(--font); font-size: 0.92rem; }
+.nb-now { color: var(--text-muted); font-size: 0.78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nb-btn { background: none; border: none; color: var(--gold); font-size: 1.05rem; width: 38px; height: 38px; border-radius: 50%; cursor: pointer; }
+.nb-main { background: var(--gold); color: var(--bg); }
+.voice-select {
+  width: 100%; padding: 10px; border-radius: 10px; font-size: 0.95rem;
+  background: var(--bg-elevated); color: var(--text); border: 1px solid var(--border);
+}
+
+/* ---- Memorize ---- */
+.memo-steps { display: flex; gap: 6px; margin-bottom: 12px; }
+.memo-step { flex: 1; height: 4px; border-radius: 2px; background: var(--bg-elevated); }
+.memo-step.on { background: var(--gold); }
+.memo-verse { font-size: 1.3rem; line-height: 2; }
+.mw.hidden { cursor: pointer; }
+.mgap { color: var(--gold-dim); letter-spacing: 1px; }
+.mw.peeked { color: var(--gold-light); }
+.memo-hint { margin: 10px 0 4px; font-size: 0.92rem; }
+.memo-input { min-height: 110px; }
+.memo-success { color: var(--success); margin-top: 10px; line-height: 1.5; }
+.memo-badge { margin-top: 12px; color: var(--success); font-size: 0.9rem; }
+.memo-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.memo-item:last-child { border-bottom: none; }
+.memo-date { color: var(--text-muted); font-size: 0.8rem; }
+
+/* ---- The Daily Walk (full screen) ---- */
+.walk-open, .walk-open body { overflow: hidden; }
+.walk {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; flex-direction: column;
+  background: var(--bg);
+  padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+}
+.walk::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(100% 60% at 50% 0%, rgba(212, 168, 75, 0.12), transparent 70%),
+              radial-gradient(70% 40% at 50% 110%, rgba(230, 150, 60, 0.10), transparent 70%);
+}
+[data-tod="night"] .walk::before { background: radial-gradient(100% 60% at 50% 0%, rgba(70, 90, 170, 0.18), transparent 70%), radial-gradient(70% 40% at 50% 110%, rgba(230, 150, 60, 0.12), transparent 70%); }
+[data-tod="dawn"] .walk::before { background: radial-gradient(100% 60% at 50% 0%, rgba(232, 140, 90, 0.20), transparent 70%); }
+.walk > * { position: relative; }
+.walk-top { display: flex; align-items: center; gap: 10px; padding: 12px 14px 4px; max-width: 720px; width: 100%; margin: 0 auto; }
+.walk-icon {
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+  background: var(--bg-elevated); border: 1px solid var(--border); color: var(--gold); font-size: 1rem; cursor: pointer;
+}
+.walk-icon.on { background: var(--gold); color: var(--bg); border-color: var(--gold); }
+.walk-dots { flex: 1; display: flex; gap: 5px; justify-content: center; }
+.walk-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); transition: all 0.3s; }
+.walk-dot.done { background: var(--gold-dim); }
+.walk-dot.on { background: var(--gold); width: 20px; border-radius: 4px; }
+.walk-step { text-align: center; color: var(--gold-dim); font-size: 0.75rem; letter-spacing: 0.18em; text-transform: uppercase; padding: 4px 0 2px; }
+.walk-body { flex: 1; display: flex; flex-direction: column; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 10px 22px 24px; max-width: 680px; width: 100%; margin: 0 auto; }
+.walk-body.enter .walk-page { animation: walkIn 0.6s ease both; }
+@keyframes walkIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.walk-page { flex: 1 0 auto; display: flex; flex-direction: column; }
+.walk-center { flex: 1 0 auto; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 10px 0; }
+.walk-title { font-family: var(--font); color: var(--gold-light); font-size: 1.5rem; line-height: 1.35; margin: 26px 0 10px; font-weight: normal; }
+.walk-sub { color: var(--text-muted); font-size: 1rem; line-height: 1.6; max-width: 420px; }
+.walk-h { font-family: var(--font); color: var(--gold); font-size: 1.4rem; font-weight: normal; margin: 6px 0 14px; }
+.walk-kicker { color: var(--gold-dim); font-size: 0.8rem; letter-spacing: 0.08em; margin-bottom: 10px; }
+.walk-kicker[style] { border-left: 3px solid var(--season); padding-left: 8px; }
+.walk-center .walk-kicker[style] { border-left: none; padding-left: 0; border-bottom: 2px solid var(--season); padding-bottom: 4px; }
+.walk-verse { font-size: 1.55rem; line-height: 1.65; border: none; padding: 0; text-align: center; max-width: 560px; }
+.walk-verse.benediction { font-size: 1.2rem; }
+.walk-ref { font-size: 1rem; text-align: center; }
+.walk-box { width: 100%; text-align: left; margin-top: 16px; }
+.walk-box .reflection { font-size: 1.08rem; }
+.walk-prayer { font-size: 1.12rem; line-height: 1.8; white-space: pre-line; }
+.walk-prompt { font-style: italic; font-size: 1.05rem; margin-bottom: 12px; }
+.walk-journal { min-height: 200px; }
+.walk-cross { font-size: 2.6rem; color: var(--gold); text-shadow: 0 0 24px rgba(212, 168, 75, 0.6); margin-bottom: 18px; }
+.walk-end-btns { justify-content: center; margin-top: 22px; }
+.walk-sound { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 26px; width: 100%; max-width: 420px; }
+.walk-nav { display: flex; justify-content: space-between; gap: 12px; padding: 12px 18px 16px; max-width: 720px; width: 100%; margin: 0 auto; border-top: 1px solid var(--border); }
+.walk-nav .btn { min-width: 120px; }
+
+/* breathing circle */
+.breath { position: relative; width: 150px; height: 150px; display: flex; align-items: center; justify-content: center; }
+.breath-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: radial-gradient(circle, rgba(212, 168, 75, 0.35), rgba(212, 168, 75, 0.05) 70%);
+  border: 1px solid var(--gold-dim);
+  transform: scale(0.55); transition: transform 4s ease-in-out;
+}
+.breath.in .breath-ring { transform: scale(1); }
+.breath-word { position: relative; color: var(--gold-light); font-family: var(--font); font-size: 1rem; }
+
+@media (max-width: 380px) {
+  .walk-verse { font-size: 1.35rem; }
+  .walk-sound { grid-template-columns: repeat(3, 1fr); }
+}
+[data-reduce-motion="1"] .breath-ring { transition: none; transform: scale(0.85); }

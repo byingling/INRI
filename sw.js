@@ -1,4 +1,4 @@
-const CACHE_NAME = 'inri-v56';
+const CACHE_NAME = 'inri-v57';
 const ASSETS = [
   './',
   './index.html',
@@ -6,6 +6,12 @@ const ASSETS = [
   './js/app.js',
   './js/content.js',
   './js/daily-depth.js',
+  './js/calendar.js',
+  './js/places.js',
+  './js/atmosphere.js',
+  './js/narration.js',
+  './js/memorize.js',
+  './js/walk.js',
   './js/library.js',
   './js/storage.js',
   './manifest.json',
