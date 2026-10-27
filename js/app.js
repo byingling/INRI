@@ -71,6 +71,7 @@ function navigate(page) {
     meals: 'Biblical Meals',
     plants: 'Biblical Plants',
     study: 'Study',
+    beyond: 'Beyond the Canon',
     hymns: 'Hymns',
     prayers: 'Prayer List',
     bookmarks: 'Bookmarks',
@@ -130,6 +131,9 @@ function renderPage(page) {
       break;
     case 'study':
       contentEl.innerHTML = renderStudy();
+      break;
+    case 'beyond':
+      contentEl.innerHTML = renderBeyondCanon();
       break;
     case 'hymns':
       contentEl.innerHTML = renderHymns();
@@ -1264,13 +1268,34 @@ function renderBiblicalPlants() {
 function renderStudy() {
   if (typeof STUDY_NOTES_EXTRA === 'undefined') return '<div class="card"><p class="reflection">Content loading…</p></div>';
   let html = '<div class="card"><h2>Study</h2><p class="reflection">' + STUDY_NOTES_EXTRA.intro + '</p></div>';
+  if (typeof WHO_IS_JESUS !== 'undefined') {
+    html += '<div class="card"><h2 style="color:var(--gold)">Who Is Jesus?</h2><p class="reflection">' + WHO_IS_JESUS.intro + '</p></div>';
+    WHO_IS_JESUS.sections.forEach(function(s) {
+      html += '<div class="card"><h3 style="color:var(--gold-light)">' + s.title + '</h3><p class="reflection">' + s.body + '</p></div>';
+    });
+  }
+  html += '<div class="card"><h2>Hard Passages & Books</h2><p class="reflection">Notes for honest reading.</p></div>';
   STUDY_NOTES_EXTRA.books.forEach(function(b) {
     html += '<div class="card"><h2 style="color:var(--gold)">' + b.name + '</h2>';
     html += '<p class="reference">' + b.refs + '</p><ul class="recipe-list">';
     b.points.forEach(function(pt) { html += '<li>' + pt + '</li>'; });
     html += '</ul></div>';
   });
-  html += '<div class="card"><p class="reflection">Also see Topics → Gifts, Works of Jesus, and study notes under some Bible chapters.</p></div>';
+  html += '<div class="card"><p class="reflection">Also see Topics → Gifts, Works of Jesus, Biblical Meals, Plants, and Beyond the Canon.</p></div>';
+  return html;
+}
+
+function renderBeyondCanon() {
+  if (typeof BEYOND_THE_CANON === 'undefined') return '<div class="card"><p class="reflection">Content loading…</p></div>';
+  let html = '<div class="card"><h2>Beyond the Canon</h2><p class="reflection">' + BEYOND_THE_CANON.intro + '</p>';
+  html += '<p class="reflection" style="margin-top:10px;font-style:italic">' + BEYOND_THE_CANON.disclaimer + '</p></div>';
+  BEYOND_THE_CANON.groups.forEach(function(g) {
+    html += '<div class="card"><h2 style="color:var(--gold)">' + g.name + '</h2>';
+    g.items.forEach(function(item) {
+      html += '<div class="study-item"><h3>' + item.title + '</h3><p class="reflection">' + item.note + '</p></div>';
+    });
+    html += '</div>';
+  });
   return html;
 }
 
