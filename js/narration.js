@@ -5,6 +5,10 @@ const Narrator = (function() {
   let segments = [], segIndex = 0, chunks = [], chunkIndex = 0;
   let state = 'idle'; // idle | playing | paused
   let pauseTimer = null, onDone = null, keepAlive = null;
+  // Chrome can garbage-collect an utterance mid-speech so its onend never fires,
+  // which stops playback after the first sentence. Holding a reference prevents that.
+  let currentUtterance = null, utterId = 0, watchdog = null, useVoice = true;
+  const isAndroid = /Android/i.test(navigator.userAgent);
 
   function prefs() { return STORAGE.get('narration', { voice: '', rate: 0.92 }); }
   function savePrefs(p) { STORAGE.set('narration', p); }
@@ -46,6 +50,15 @@ const Narrator = (function() {
     return out;
   }
 
+  // Move to the next sentence group exactly once per utterance (onend, onerror or watchdog)
+  function advance(id) {
+    if (id !== utterId || state !== 'playing') return;
+    utterId++;
+    clearInterval(watchdog);
+    chunkIndex++;
+    speakChunk();
+  }
+
   function speakChunk() {
     if (state !== 'playing') return;
     if (chunkIndex >= chunks.length) {
@@ -55,14 +68,41 @@ const Narrator = (function() {
       pauseTimer = setTimeout(startSegment, pause);
       return;
     }
+    const id = utterId;
     const u = new SpeechSynthesisUtterance(chunks[chunkIndex]);
-    const v = pickVoice();
-    if (v) { u.voice = v; u.lang = v.lang; }
+    currentUtterance = u;
+    const v = useVoice ? pickVoice() : null;
+    if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = 'en-US'; }
     u.rate = prefs().rate;
     u.pitch = 1;
-    u.onend = function() { if (state !== 'playing') return; chunkIndex++; speakChunk(); };
-    u.onerror = function(e) { if (e.error === 'interrupted' || e.error === 'canceled') return; chunkIndex++; speakChunk(); };
+    let started = false;
+    u.onstart = function() { started = true; };
+    u.onend = function() { advance(id); };
+    u.onerror = function(e) {
+      if (e.error === 'interrupted' || e.error === 'canceled') return;
+      // A chosen voice that isn't available (e.g. an online-only voice) — fall back to the default
+      if (useVoice && (e.error === 'voice-unavailable' || e.error === 'synthesis-failed' || e.error === 'language-unavailable')) {
+        useVoice = false;
+        if (id === utterId) { utterId++; clearInterval(watchdog); speakChunk(); }
+        return;
+      }
+      advance(id);
+    };
     speechSynthesis.speak(u);
+
+    // Safety net: if the browser stops speaking but never reports onend, carry on anyway
+    const t0 = Date.now();
+    let quietSince = 0;
+    clearInterval(watchdog);
+    watchdog = setInterval(function() {
+      if (id !== utterId || state !== 'playing') { clearInterval(watchdog); return; }
+      const busy = speechSynthesis.speaking || speechSynthesis.pending;
+      if (busy) { quietSince = 0; return; }
+      if (!quietSince) quietSince = Date.now();
+      // Allow a moment for speech to start; then treat sustained silence as "finished"
+      const grace = started ? 700 : 2500;
+      if (Date.now() - quietSince > grace && Date.now() - t0 > 900) advance(id);
+    }, 300);
   }
 
   function startSegment() {
@@ -84,9 +124,13 @@ const Narrator = (function() {
     onDone = opts && opts.onDone;
     showBar(opts && opts.title);
     if (typeof Ambient !== 'undefined') Ambient.duck(true);
-    // Chrome pauses speech after ~15s in background tabs unless nudged
+    // Desktop Chrome goes quiet after ~15s unless nudged. On Android, pause() stops speech
+    // outright, so the nudge is desktop-only (our short sentence groups cover Android).
     clearInterval(keepAlive);
-    keepAlive = setInterval(function() { if (state === 'playing' && speechSynthesis.speaking && !speechSynthesis.paused) { speechSynthesis.pause(); speechSynthesis.resume(); } }, 10000);
+    if (!isAndroid) {
+      keepAlive = setInterval(function() { if (state === 'playing' && speechSynthesis.speaking && !speechSynthesis.paused) { speechSynthesis.pause(); speechSynthesis.resume(); } }, 10000);
+    }
+    useVoice = true;
     speechSynthesis.cancel();
     setTimeout(startSegment, 150);
   }
@@ -94,7 +138,7 @@ const Narrator = (function() {
   // Pause = stop speaking but remember where we were; resume restarts the current sentence group
   function pause() {
     if (state !== 'playing') return;
-    state = 'paused'; clearTimeout(pauseTimer); speechSynthesis.cancel(); updateBar();
+    state = 'paused'; utterId++; clearInterval(watchdog); clearTimeout(pauseTimer); speechSynthesis.cancel(); updateBar();
   }
   function resume() {
     if (state !== 'paused') return;
@@ -103,13 +147,14 @@ const Narrator = (function() {
   }
   function skip(dir) {
     if (state === 'idle') return;
-    clearTimeout(pauseTimer); speechSynthesis.cancel();
+    utterId++; clearInterval(watchdog); clearTimeout(pauseTimer); speechSynthesis.cancel();
     segIndex = Math.max(0, Math.min(segments.length - 1, segIndex + dir));
     state = 'playing'; startSegment();
   }
   function stop(silent) {
-    clearTimeout(pauseTimer); clearInterval(keepAlive);
+    utterId++; clearInterval(watchdog); clearTimeout(pauseTimer); clearInterval(keepAlive);
     if (window.speechSynthesis) speechSynthesis.cancel();
+    currentUtterance = null;
     const wasActive = state !== 'idle';
     state = 'idle';
     hideBar();

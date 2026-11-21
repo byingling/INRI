@@ -1,4 +1,4 @@
-const CACHE_NAME = 'inri-v58';
+const CACHE_NAME = 'inri-v59';
 const ASSETS = [
   './',
   './index.html',
