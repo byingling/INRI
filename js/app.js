@@ -79,7 +79,8 @@ function navigate(page) {
     journal: 'My Journal',
     settings: 'Settings',
     about: 'About INRI',
-    memorize: 'Memorize'
+    memorize: 'Memorize',
+    marks: 'Highlights & Notes'
   };
   pageTitle.textContent = titles[page] || 'INRI';
   renderPage(page);
@@ -159,6 +160,10 @@ function renderPage(page) {
       contentEl.innerHTML = renderMemorize();
       setupMemorize();
       break;
+    case 'marks':
+      contentEl.innerHTML = renderMarks();
+      setupMarks();
+      break;
     default:
       contentEl.innerHTML = '<p>Page not found.</p>';
   }
@@ -168,7 +173,7 @@ function renderToday(data) {
   const dateStr = new Date().toLocaleDateString('en-US', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
   });
-  return `
+  const html = `
     <div class="hero">
       <div class="logo-large">INRI</div>
       <p>Iesus Nazarenus, Rex Iudaeorum</p>
@@ -231,23 +236,14 @@ function renderToday(data) {
     </div>
     <div id="continue-plan-slot"></div>
   `;
+  // Fill in the streak and plan card once the page is in the DOM
   setTimeout(function(){
     var s=getStreak();
     var el=document.getElementById('streak-display');
     if(el) el.textContent = s.count + ' day' + (s.count===1?'':'s');
-    var info = getContinuePlanInfo();
-    var slot = document.getElementById('continue-plan-slot');
-    if (slot && info) {
-      if (info.complete) {
-        slot.innerHTML = '<div class="card"><h2>Plan complete</h2><p class="reflection">' + info.plan.title + ' finished. Choose another in Reading Plans.</p></div>';
-      } else {
-        slot.innerHTML = '<div class="card"><h2>Continue Plan</h2><p class="reflection">' + info.plan.title + ' · Day ' + info.next.day + ': ' + info.next.ref + ' (' + info.doneCount + '/' + info.total + ')</p><div class="btn-group"><button class="btn" id="continue-plan-btn">Continue Reading</button></div></div>';
-        document.getElementById('continue-plan-btn').onclick = function() {
-          openChapter(info.next.book, info.next.chapter);
-        };
-      }
-    }
+    if (typeof renderContinuePlanCard === 'function') renderContinuePlanCard(document.getElementById('continue-plan-slot'));
   }, 40);
+  return html;
 }
 
 function renderDevotion(data) {
@@ -391,8 +387,11 @@ function renderBible() {
       <button class="btn" id="load-btn">Read</button>
     </div>
     <div class="bible-controls" style="margin-top:0">
-      <input type="text" id="bible-search" placeholder="Search keyword…" style="flex:1;min-width:140px">
-      <button class="btn btn-outline" id="search-btn">Search</button>
+      <input type="search" id="bible-search" placeholder="Search the Bible… (use “quotes” for a phrase)" style="flex:1;min-width:160px" enterkeyhint="search">
+      <select id="search-scope" aria-label="Search in">
+        <option value="all">Whole Bible</option><option value="ot">Old Testament</option><option value="nt">New Testament</option><option value="book">This book</option>
+      </select>
+      <button class="btn" id="search-btn">Search</button>
       <button class="btn btn-outline" id="random-verse-btn">Random</button>
       <button class="btn btn-outline" id="compare-btn">Compare</button>
     </div>
@@ -441,35 +440,8 @@ function setupBibleControls() {
   const searchBtn = document.getElementById('search-btn');
   const searchInput = document.getElementById('bible-search');
   if (searchBtn && searchInput) {
-    searchBtn.addEventListener('click', async () => {
-      const q = searchInput.value.trim();
-      if (!q) return;
-      const el = document.getElementById('chapter-content');
-      el.innerHTML = '<p class="loading">Searching…</p>';
-      try {
-        // Simple approach: search current chapter first, or fetch a known passage
-        // Use Midvash passages or fall back to loading popular chapters and filtering
-        const ver = getBibleVersion() || 'kjv';
-        const res = await fetch('https://api.midvash.com/v1/' + ver + '/' + currentBook + '/' + currentChapter);
-        const json = await res.json();
-        const data = json.data || json;
-        let verses = Array.isArray(data) ? data : (data.verses || []);
-        const lower = q.toLowerCase();
-        const matches = verses.filter(v => (v.text || '').toLowerCase().includes(lower));
-        if (!matches.length) {
-          el.innerHTML = '<p class="reflection">No matches in the current chapter. Try another chapter or a different keyword.</p>';
-          return;
-        }
-        let html = '<h2 style="color:var(--gold)">Search: "' + q + '" in ' + (BIBLE_BOOKS.find(b=>b.id===currentBook)||{}).name + ' ' + currentChapter + '</h2>';
-        matches.forEach(v => {
-          html += '<p><span class="verse-num">' + (v.verse||'') + '</span>' + (v.text||'') + '</p>';
-          html += '<div class="btn-group" style="margin:4px 0 12px"><button class="btn btn-outline btn-sm" onclick="addBookmark(\'' + (v.text||'').replace(/'/g,"\\'") + '\', \'' + currentBook + ' ' + currentChapter + ':' + (v.verse||'') + '\')">♥</button></div>';
-        });
-        el.innerHTML = html;
-      } catch (e) {
-        el.innerHTML = '<p class="reflection">Search failed. Check your connection.</p>';
-      }
-    });
+    searchBtn.addEventListener('click', function() { runBibleSearch(searchInput.value, document.getElementById('search-scope').value); });
+    searchInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') searchBtn.click(); });
   }
 
   // Book grid
@@ -536,149 +508,7 @@ function setupBibleControls() {
   }
 }
 
-function renderChapterHTML(book, chapter, verses, offline) {
-  const bookName = (BIBLE_BOOKS.find(b => b.id === book) || {}).name || book;
-  let html = '<div class="bible-nav-row"><button class="btn btn-outline" id="prev-ch">‹ Prev</button>';
-  html += '<h2 style="color:var(--gold);margin:0;flex:1;text-align:center">' + bookName + ' ' + chapter + (offline ? ' · ☁ offline' : '') + '</h2>';
-  html += '<button class="btn btn-outline" id="next-ch">Next ›</button></div>';
-  // Mark complete if this chapter is in active plan
-  const active = getActivePlan();
-  if (active) {
-    const plan = READING_PLANS.concat(getCustomPlans()).find(function(p) { return p.id === active; });
-    const done = getPlanProgress()[active] || [];
-    if (plan) {
-      const match = plan.days.find(function(d) { return d.book === book && d.chapter === chapter; });
-      if (match && !done.includes(match.day)) {
-        html += '<div class="btn-group" style="margin-bottom:12px"><button class="btn" id="mark-plan-done">Mark plan day ' + match.day + ' complete</button></div>';
-      } else if (match) {
-        html += '<p class="reflection" style="color:var(--gold);margin-bottom:12px">✓ Plan day ' + match.day + ' complete</p>';
-      }
-    }
-  }
-  const ver = getBibleVersion() || 'kjv';
-  verses.forEach(function(v, i) {
-    const num = v.verse || v.number || (i + 1);
-    const text = v.text || v.content || String(v);
-    const key = ver + ':' + book + ':' + chapter + ':' + num;
-    const hl = isHighlighted(key) ? ' highlighted' : '';
-    html += '<p class="bible-verse' + hl + '" data-hk="' + key + '"><span class="verse-num">' + num + '</span>' + text + '</p>';
-  });
-  // Study notes for known refs in this chapter
-  if (typeof STUDY_NOTES !== 'undefined') {
-    Object.keys(STUDY_NOTES).forEach(function(ref) {
-      if (ref.indexOf(String(chapter)) >= 0 && ref.toLowerCase().indexOf(bookName.toLowerCase().split(' ')[0].toLowerCase()) >= 0) {
-        html += '<div class="study-note"><strong>Study note (' + ref + ')</strong><p>' + STUDY_NOTES[ref] + '</p></div>';
-      }
-    });
-  }
-  return html;
-}
-
-function wireChapterNav(book, chapter) {
-  const bookObj = BIBLE_BOOKS.find(b => b.id === book);
-  const maxCh = bookObj ? bookObj.chapters : 1;
-  const prev = document.getElementById('prev-ch');
-  const next = document.getElementById('next-ch');
-  const markBtn = document.getElementById('mark-plan-done');
-  document.querySelectorAll('.bible-verse').forEach(function(p) {
-    p.addEventListener('click', function() {
-      const key = this.dataset.hk;
-      if (!key) return;
-      const on = toggleHighlight(key);
-      this.classList.toggle('highlighted', on);
-      showToast(on ? 'Highlighted' : 'Highlight removed');
-    });
-  });
-  if (markBtn) {
-    markBtn.onclick = function() {
-      const active = getActivePlan();
-      if (!active) return;
-      const plan = READING_PLANS.concat(getCustomPlans()).find(function(p) { return p.id === active; });
-      if (!plan) return;
-      const match = plan.days.find(function(d) { return d.book === book && d.chapter === chapter; });
-      if (!match) return;
-      let progress = getPlanProgress();
-      if (!progress[active]) progress[active] = [];
-      if (!progress[active].includes(match.day)) progress[active].push(match.day);
-      savePlanProgress(progress);
-      showToast('Day ' + match.day + ' marked complete');
-      loadChapter(book, chapter);
-    };
-  }
-  if (prev) {
-    prev.onclick = function() {
-      if (chapter > 1) {
-        currentChapter = chapter - 1;
-        loadChapter(book, currentChapter);
-      } else {
-        const idx = BIBLE_BOOKS.findIndex(b => b.id === book);
-        if (idx > 0) {
-          currentBook = BIBLE_BOOKS[idx - 1].id;
-          currentChapter = BIBLE_BOOKS[idx - 1].chapters;
-          loadChapter(currentBook, currentChapter);
-        }
-      }
-    };
-  }
-  if (next) {
-    next.onclick = function() {
-      if (chapter < maxCh) {
-        currentChapter = chapter + 1;
-        loadChapter(book, currentChapter);
-      } else {
-        const idx = BIBLE_BOOKS.findIndex(b => b.id === book);
-        if (idx < BIBLE_BOOKS.length - 1) {
-          currentBook = BIBLE_BOOKS[idx + 1].id;
-          currentChapter = 1;
-          loadChapter(currentBook, currentChapter);
-        }
-      }
-    };
-  }
-}
-
-async function loadChapter(book, chapter) {
-  const el = document.getElementById('chapter-content');
-  if (!el) return;
-  el.innerHTML = '<p class="loading">Loading Scripture…</p>';
-  const ver = getBibleVersion() || 'kjv';
-  currentBook = book;
-  currentChapter = chapter;
-
-  const cached = getCachedChapter(ver, book, chapter);
-  if (cached && cached.data) {
-    const verses = Array.isArray(cached.data) ? cached.data : (cached.data.verses || []);
-    if (verses.length) {
-      el.innerHTML = renderChapterHTML(book, chapter, verses, true);
-      wireChapterNav(book, chapter);
-      return;
-    }
-  }
-
-  try {
-    const url = 'https://api.midvash.com/v1/' + ver + '/' + book + '/' + chapter;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Failed to load');
-    const json = await res.json();
-    const data = json.data || json;
-    let verses = [];
-    if (Array.isArray(data)) verses = data;
-    else if (data.verses) verses = data.verses;
-    else if (data.chapter && data.chapter.verses) verses = data.chapter.verses;
-    else if (typeof data === 'object') verses = Object.values(data).filter(v => v && (v.text || v.verse));
-
-    if (!verses.length && data.text) {
-      el.innerHTML = '<p class="verse">' + data.text + '</p>';
-      return;
-    }
-    cacheChapter(ver, book, chapter, verses);
-    el.innerHTML = renderChapterHTML(book, chapter, verses, false);
-    wireChapterNav(book, chapter);
-  } catch (err) {
-    console.error(err);
-    el.innerHTML = '<p class="reflection">Unable to load the chapter. Check your connection. Previously viewed chapters may be available offline.</p>';
-  }
-}
+// renderChapterHTML, wireChapterNav and loadChapter now live in bible-plus.js
 
 function exportText(title, body) {
   const full = title + "\n\n" + body;
@@ -787,99 +617,7 @@ function renderAbout() {
 
 
 // ---------- Reading Plans ----------
-function renderPlans() {
-  const progress = getPlanProgress();
-  let html = '<div class="card"><h2>Reading Plans</h2><p class="reflection">Tap a day to open that chapter. Check when finished.</p></div>';
-  html += '<div class="card"><h2>Custom Plan</h2><p class="reflection">Build a simple plan (book + start chapter + days).</p>';
-  html += '<div class="bible-controls"><select id="cp-book">';
-  BIBLE_BOOKS.forEach(function(b){ html += '<option value="'+b.id+'">'+b.name+'</option>'; });
-  html += '</select><input type="number" id="cp-start" min="1" value="1" style="width:70px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text)" title="Start chapter">';
-  html += '<input type="number" id="cp-days" min="1" max="31" value="7" style="width:70px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text)" title="Days">';
-  html += '<button class="btn" id="cp-create">Create</button></div></div>';
-  // merge custom plans into display list below via READING_PLANS concat in forEach - inject custom first
-  const allPlans = (getCustomPlans() || []).concat(READING_PLANS);
-
-  allPlans.forEach(plan => {
-    const done = progress[plan.id] || [];
-    const pct = Math.round((done.length / plan.days.length) * 100);
-    html += '<div class="card plan-card" data-plan-id="' + plan.id + '">';
-    html += '<h2>' + plan.title + '</h2>';
-    html += '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%"></div></div>';
-    html += '<p class="reflection plan-status">' + done.length + ' of ' + plan.days.length + ' days · ' + pct + '%</p>';
-    html += '<div class="plan-days">';
-    plan.days.forEach(d => {
-      const checked = done.includes(d.day) ? ' checked' : '';
-      const doneClass = done.includes(d.day) ? ' done' : '';
-      html += '<div class="plan-day' + doneClass + '" data-plan="' + plan.id + '" data-day="' + d.day + '" data-book="' + d.book + '" data-chapter="' + d.chapter + '">';
-      html += '<label class="plan-check"><input type="checkbox"' + checked + '><span class="checkmark"></span></label>';
-      html += '<button type="button" class="plan-open">' + d.ref + '</button>';
-      html += '</div>';
-    });
-    html += '</div></div>';
-  });
-  return html;
-}
-
-function setupPlans() {
-  const cpCreate = document.getElementById('cp-create');
-  if (cpCreate) {
-    cpCreate.onclick = function() {
-      const book = document.getElementById('cp-book').value;
-      const start = parseInt(document.getElementById('cp-start').value, 10) || 1;
-      const days = Math.min(31, parseInt(document.getElementById('cp-days').value, 10) || 7);
-      const bookObj = BIBLE_BOOKS.find(function(b) { return b.id === book; });
-      if (!bookObj) return;
-      const planDays = [];
-      for (let i = 0; i < days; i++) {
-        const ch = start + i;
-        if (ch > bookObj.chapters) break;
-        planDays.push({ day: i + 1, ref: bookObj.name + ' ' + ch, book: book, chapter: ch });
-      }
-      if (!planDays.length) { showToast('Invalid range'); return; }
-      const plans = getCustomPlans();
-      const id = 'custom-' + Date.now();
-      plans.unshift({ id: id, title: 'Custom: ' + bookObj.name + ' ' + start + '+', days: planDays });
-      saveCustomPlans(plans);
-      setActivePlan(id);
-      showToast('Custom plan created');
-      contentEl.innerHTML = renderPlans();
-      setupPlans();
-    };
-  }
-  // Checkbox: mark complete
-  document.querySelectorAll('.plan-day input[type=checkbox]').forEach(function(cb) {
-    cb.addEventListener('click', function(e) {
-      e.stopPropagation();
-    });
-    cb.addEventListener('change', function() {
-      const row = this.closest('.plan-day');
-      const planId = row.dataset.plan;
-      const day = parseInt(row.dataset.day, 10);
-      let progress = getPlanProgress();
-      if (!progress[planId]) progress[planId] = [];
-      if (this.checked) {
-        if (!progress[planId].includes(day)) progress[planId].push(day);
-        row.classList.add('done');
-      } else {
-        progress[planId] = progress[planId].filter(function(d) { return d !== day; });
-        row.classList.remove('done');
-      }
-      savePlanProgress(progress);
-      setActivePlan(planId);
-      contentEl.innerHTML = renderPlans();
-      setupPlans();
-    });
-  });
-  // Open chapter button
-  document.querySelectorAll('.plan-open').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.preventDefault();
-      const row = this.closest('.plan-day');
-      openChapter(row.dataset.book, parseInt(row.dataset.chapter, 10));
-    });
-  });
-}
-
+// renderPlans / setupPlans live in plans-plus.js
 
 function renderBookmarks() {
   const list = getBookmarks();
@@ -1022,7 +760,7 @@ function renderSettings() {
   const streak = getStreak();
   const theme = getTheme();
   const ver = getBibleVersion();
-  return '<div id="immersive-settings"></div>' +
+  return '<div id="reminder-settings"></div><div id="immersive-settings"></div>' +
     '<div class="card"><h2>Reading Streak</h2><p class="verse" style="border:none;padding:0;font-size:2.2rem;text-align:center">' + streak.count + ' day' + (streak.count === 1 ? '' : 's') + '</p><p class="reflection" style="text-align:center">Open the app each day to build your streak.</p></div>' +
     '<div class="card"><h2>Font Size</h2><div class="btn-group">' +
     '<button class="btn ' + (size==='small'?'':'btn-outline') + '" data-size="small">Small</button>' +
@@ -1035,8 +773,6 @@ function renderSettings() {
     '<button class="btn ' + (ver==='kjv'?'':'btn-outline') + '" data-ver="kjv">KJV</button>' +
     '<button class="btn ' + (ver==='web'?'':'btn-outline') + '" data-ver="web">WEB</button></div>' +
     '<p class="reflection" style="margin-top:8px;font-size:0.85rem">KJV = King James · WEB = World English Bible (both public domain)</p></div>' +
-    '<div class="card"><h2>Daily Reminder</h2><p class="reflection">Set a daily reminder so you do not miss your time with the Lord.</p>' +
-    '<div class="btn-group"><button class="btn" id="reminder-btn">How to Set a Reminder</button></div></div>' +
     '<div class="card"><h2>Install App</h2><p class="reflection">Add INRI to your home screen for one-tap access.</p>' +
     '<div class="btn-group"><button class="btn btn-outline" id="install-btn">How to Install</button></div></div>' +
     '<div class="card"><h2>Accessibility</h2><div class="btn-group">' +
@@ -1072,10 +808,6 @@ function setupSettings() {
       contentEl.innerHTML = renderSettings();
       setupSettings();
     });
-  });
-  var rem = document.getElementById('reminder-btn');
-  if (rem) rem.addEventListener('click', function() {
-    alert('To set a daily reminder:\n\n1. Open your Clock or Reminders app\n2. Create a daily alarm/reminder\n3. Name it "INRI – Daily Faith"');
   });
   var inst = document.getElementById('install-btn');
   if (inst) inst.addEventListener('click', function() {
@@ -1216,75 +948,9 @@ function renderTopics() {
 
 
 // ---------- Prayer List ----------
-function renderPrayerList() {
-  const list = getPrayers();
-  let html = '<div class="card"><h2>Prayer List</h2><p class="reflection">Add people or topics to pray for.</p>';
-  html += '<div class="journal-input"><input type="text" id="prayer-input" placeholder="Name or topic…"><button class="btn" id="prayer-add">Add</button></div></div>';
-  if (!list.length) {
-    html += '<div class="card"><p class="reflection">No items yet.</p></div>';
-  } else {
-    list.forEach(function(p, i) {
-      const done = p.prayedToday ? ' done' : '';
-      html += '<div class="card prayer-item' + done + '"><div style="display:flex;align-items:center;gap:10px">';
-      html += '<input type="checkbox" data-pi="' + i + '" class="prayer-check"' + (p.prayedToday ? ' checked' : '') + '>';
-      html += '<span style="flex:1">' + p.text + '</span>';
-      html += '<button class="btn btn-outline" data-pr="' + i + '" style="padding:6px 10px">×</button>';
-      html += '</div></div>';
-    });
-  }
-  return html;
-}
+// renderPrayerList / setupPrayerList live in prayer-list.js
 
-function setupPrayerList() {
-  const add = document.getElementById('prayer-add');
-  const input = document.getElementById('prayer-input');
-  if (add && input) {
-    add.onclick = function() {
-      const t = input.value.trim();
-      if (!t) return;
-      const list = getPrayers();
-      list.unshift({ text: t, prayedToday: false, added: new Date().toISOString() });
-      savePrayers(list);
-      contentEl.innerHTML = renderPrayerList();
-      setupPrayerList();
-      showToast('Added to prayer list');
-    };
-    input.onkeydown = function(e) { if (e.key === 'Enter') add.click(); };
-  }
-  document.querySelectorAll('.prayer-check').forEach(function(cb) {
-    cb.onchange = function() {
-      const list = getPrayers();
-      const i = parseInt(this.dataset.pi, 10);
-      list[i].prayedToday = this.checked;
-      savePrayers(list);
-      contentEl.innerHTML = renderPrayerList();
-      setupPrayerList();
-    };
-  });
-  document.querySelectorAll('[data-pr]').forEach(function(btn) {
-    btn.onclick = function() {
-      const list = getPrayers();
-      list.splice(parseInt(this.dataset.pr, 10), 1);
-      savePrayers(list);
-      contentEl.innerHTML = renderPrayerList();
-      setupPrayerList();
-    };
-  });
-}
-
-// ---------- Continue active plan helper ----------
-function getContinuePlanInfo() {
-  const active = getActivePlan();
-  if (!active) return null;
-  const plan = READING_PLANS.concat(getCustomPlans()).find(function(p) { return p.id === active; });
-  if (!plan) return null;
-  const done = getPlanProgress()[active] || [];
-  const next = plan.days.find(function(d) { return !done.includes(d.day); });
-  if (!next) return { plan: plan, complete: true };
-  return { plan: plan, next: next, doneCount: done.length, total: plan.days.length };
-}
-
-
+// getContinuePlanInfo lives in plans-plus.js
 
 // ---------- Works of Jesus ----------
 function renderWorksOfJesus() {

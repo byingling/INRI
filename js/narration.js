@@ -4,7 +4,7 @@
 const Narrator = (function() {
   let segments = [], segIndex = 0, chunks = [], chunkIndex = 0;
   let state = 'idle'; // idle | playing | paused
-  let pauseTimer = null, onDone = null, keepAlive = null;
+  let pauseTimer = null, onDone = null, keepAlive = null, onStopCb = null;
   // Chrome can garbage-collect an utterance mid-speech so its onend never fires,
   // which stops playback after the first sentence. Holding a reference prevents that.
   let currentUtterance = null, utterId = 0, watchdog = null, useVoice = true;
@@ -122,6 +122,7 @@ const Narrator = (function() {
     if (!segments.length) return;
     segIndex = 0; state = 'playing';
     onDone = opts && opts.onDone;
+    onStopCb = opts && opts.onStop;
     showBar(opts && opts.title);
     if (typeof Ambient !== 'undefined') Ambient.duck(true);
     // Desktop Chrome goes quiet after ~15s unless nudged. On Android, pause() stops speech
@@ -159,6 +160,8 @@ const Narrator = (function() {
     state = 'idle';
     hideBar();
     if (wasActive && typeof Ambient !== 'undefined') Ambient.duck(false);
+    const cb = onStopCb; onStopCb = null;
+    if (wasActive && cb) cb();
   }
   function finish() {
     stop();

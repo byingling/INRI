@@ -1148,3 +1148,105 @@ body::before {
 .prayer-body .prayer-para { font-size: 1.1rem; line-height: 1.8; margin-bottom: 16px; }
 .prayer-body .prayer-para:last-child { margin-bottom: 18px; }
 .walk-prayer { white-space: pre-line; }
+
+/* =====================================================================
+   Bible reader, highlights & notes, plans, prayer list, reminders
+   ===================================================================== */
+#search-scope { padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: var(--text); }
+.offline-tag { font-size: 0.7rem; color: var(--gold-dim); border: 1px solid var(--border); border-radius: 10px; padding: 1px 7px; vertical-align: middle; font-family: var(--font-sans); }
+.chapter-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 12px 0 6px; }
+.keep-going { display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 0.85rem; }
+.keep-going input { accent-color: var(--gold); width: 18px; height: 18px; }
+.tap-hint { font-size: 0.78rem; color: var(--gold-dim); margin: 4px 0 10px; }
+.bible-verse { cursor: pointer; border-radius: 6px; padding: 2px 4px; margin: 0 -4px 8px; transition: background 0.3s; }
+.bible-verse.reading { background: rgba(212, 168, 75, 0.16); box-shadow: inset 3px 0 0 var(--gold); }
+.bible-verse.flash { animation: verseFlash 2.4s ease; }
+@keyframes verseFlash { 0%, 60% { background: rgba(212, 168, 75, 0.35); } 100% { background: transparent; } }
+.note-mark { color: var(--gold); font-size: 0.8rem; margin-left: 4px; }
+.hl-gold { background: rgba(230, 190, 80, 0.28); }
+.hl-green { background: rgba(110, 180, 110, 0.26); }
+.hl-blue { background: rgba(90, 150, 220, 0.26); }
+.hl-rose { background: rgba(220, 110, 140, 0.26); }
+.bible-verse.highlighted { background: rgba(230, 190, 80, 0.28); }
+.hl-swatch-gold { background: #e6be50; } .hl-swatch-green { background: #6eb46e; } .hl-swatch-blue { background: #5a96dc; } .hl-swatch-rose { background: #dc6e8c; }
+
+.verse-sheet { position: fixed; inset: 0; z-index: 150; }
+.vs-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.45); opacity: 0; transition: opacity 0.2s; }
+.vs-panel {
+  position: absolute; left: 50%; bottom: 0; width: min(600px, 100%); transform: translate(-50%, 100%);
+  background: var(--bg-card); border: 1px solid var(--border); border-bottom: none; border-radius: 18px 18px 0 0;
+  padding: 10px 18px calc(18px + env(safe-area-inset-bottom, 0px)); transition: transform 0.25s ease; max-height: 85vh; overflow-y: auto;
+}
+.verse-sheet.open .vs-backdrop { opacity: 1; }
+.verse-sheet.open .vs-panel { transform: translate(-50%, 0); }
+.vs-grip { width: 40px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 10px; }
+.vs-ref { color: var(--gold); font-family: var(--font); font-size: 1.05rem; }
+.vs-text { color: var(--text); line-height: 1.6; margin: 6px 0 12px; font-family: var(--font); }
+.vs-colors { display: flex; gap: 12px; align-items: center; margin-bottom: 14px; }
+.vs-color { width: 34px; height: 34px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+.vs-color.on { border-color: var(--text); box-shadow: 0 0 0 2px var(--bg-card) inset; }
+.vs-clear { background: var(--bg-elevated); color: var(--text-muted); border: 1px solid var(--border); font-size: 0.9rem; }
+.vs-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.vs-actions button { background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 11px 6px; font-size: 0.85rem; cursor: pointer; }
+.vs-note textarea { width: 100%; min-height: 110px; margin-top: 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); padding: 10px; font-size: 1rem; }
+
+.search-hit { display: block; width: 100%; text-align: left; background: none; border: none; border-bottom: 1px solid var(--border); padding: 10px 2px; color: var(--text); cursor: pointer; }
+.sh-ref { display: block; color: var(--gold); font-size: 0.85rem; margin-bottom: 2px; }
+.sh-text { font-family: var(--font); line-height: 1.55; }
+.search-hit mark { background: rgba(230, 190, 80, 0.35); color: inherit; border-radius: 3px; padding: 0 1px; }
+
+.marks-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.mf { display: flex; align-items: center; gap: 6px; background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-muted); border-radius: 18px; padding: 6px 12px; font-size: 0.85rem; cursor: pointer; }
+.mf.on { border-color: var(--gold); color: var(--gold-light); }
+.mf-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.marks-sort { margin-top: 10px; color: var(--text-muted); font-size: 0.85rem; }
+.linkish { background: none; border: none; color: var(--gold-dim); cursor: pointer; padding: 2px; font-size: inherit; text-decoration: underline; }
+.linkish.on { color: var(--gold-light); text-decoration: none; }
+.mark-item { cursor: pointer; border-left: 4px solid var(--border); }
+.hl-edge-gold { border-left-color: #e6be50; } .hl-edge-green { border-left-color: #6eb46e; } .hl-edge-blue { border-left-color: #5a96dc; } .hl-edge-rose { border-left-color: #dc6e8c; }
+.mark-ref { color: var(--gold); font-family: var(--font); display: flex; justify-content: space-between; gap: 8px; }
+.mark-date { color: var(--text-muted); font-size: 0.78rem; font-family: var(--font-sans); }
+.mark-text { font-family: var(--font); line-height: 1.6; margin-top: 6px; border-radius: 4px; padding: 2px 4px; }
+.mark-note { margin-top: 8px; color: var(--text-muted); font-style: italic; line-height: 1.5; }
+
+.plans-heading { color: var(--gold-dim); font-size: 0.8rem; letter-spacing: 0.14em; text-transform: uppercase; margin: 22px 4px 10px; font-weight: normal; }
+.active-plan { border-color: var(--gold-dim); }
+.active-tag { font-size: 0.7rem; background: var(--gold); color: var(--bg); border-radius: 10px; padding: 2px 8px; vertical-align: middle; font-family: var(--font-sans); }
+.plan-day.partial .plan-open { color: var(--gold-light); }
+.pd-num { color: var(--gold-dim); font-size: 0.8rem; margin-right: 4px; }
+.plan-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 4px; }
+.plan-chip { border: 1px solid var(--border); border-radius: 14px; padding: 4px 10px; font-size: 0.82rem; color: var(--text-muted); }
+.plan-chip.done { border-color: var(--gold-dim); color: var(--gold-light); }
+.plan-chip.done::before { content: '✓ '; }
+.plan-cta { cursor: pointer; }
+.plan-toggle { margin-top: 8px; }
+.num-input { width: 74px; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+.plan-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: var(--bg-elevated); border: 1px solid var(--border); border-left: 3px solid var(--gold); border-radius: 10px; padding: 10px 12px; margin: 8px 0 10px; }
+.plan-banner > div { flex: 1; min-width: 160px; }
+.pb-ref { color: var(--text); font-size: 0.92rem; }
+.pb-done { color: var(--success); font-size: 0.9rem; }
+
+.prayer-tabs { display: flex; gap: 8px; margin-top: 14px; }
+.pt { flex: 1; background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-muted); border-radius: 10px; padding: 9px; cursor: pointer; font-size: 0.9rem; }
+.pt.on { border-color: var(--gold); color: var(--gold-light); }
+.pi-row { display: flex; align-items: center; gap: 10px; }
+.pi-check input { width: 22px; height: 22px; accent-color: var(--gold); }
+.pi-main { flex: 1; min-width: 0; }
+.pi-text { color: var(--text); font-size: 1.02rem; }
+.pi-meta { color: var(--text-muted); font-size: 0.78rem; margin-top: 2px; }
+.pi-del { background: none; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer; padding: 4px 6px; }
+.pi-answer-form textarea { width: 100%; min-height: 80px; margin-top: 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); padding: 10px; }
+.prayer-item.done .pi-text { color: var(--gold-light); }
+.prayer-item.answered { border-left: 4px solid var(--success); }
+.pi-note { margin-top: 8px; font-style: italic; color: var(--text); line-height: 1.55; }
+.faithful .verse { text-align: center; }
+.walk-prayers { display: flex; flex-direction: column; gap: 8px; }
+.walk-prayer-item { display: flex; align-items: center; gap: 12px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; font-size: 1.05rem; cursor: pointer; }
+.walk-prayer-item input { width: 22px; height: 22px; accent-color: var(--gold); }
+.walk-prayer-item.done { border-color: var(--gold-dim); color: var(--gold-light); }
+
+.rem-time { display: flex; align-items: center; gap: 10px; color: var(--text); margin: 6px 0 12px; }
+.rem-time input { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: var(--text); font-size: 1rem; }
+.rem-toggle { display: flex; align-items: center; gap: 10px; color: var(--text); margin: 6px 0; }
+.rem-toggle input { width: 20px; height: 20px; accent-color: var(--gold); }
+.rem-status { font-size: 0.85rem; }

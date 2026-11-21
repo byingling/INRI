@@ -18,6 +18,12 @@ A Progressive Web App for daily devotion, inspiration, morning & night prayers, 
 - **Ambient sound**: rain, fireside, Galilee shore, or a still pad (generated in the browser, nothing to download)
 - **Memorize**: hide the verse step by step, then check yourself from memory
 - Light that follows the time of day (dawn, day, evening, night)
+- **Bible reader**: listen to whole chapters with follow-along (keeps going to the next chapter), tap any verse to highlight in four colors, add notes, save, copy, share or memorize
+- **Search the whole Bible** (KJV), with phrase search and Old/New Testament filters; the full KJV can be saved for offline reading
+- **Highlights & Notes**: everything you've marked, in one place
+- **Reading plans that keep your place**: Gospels in 30 days, Psalms in a month, Proverbs in a month, New Testament in 90 days, the Bible in a year, or your own
+- **Prayer list with answers**: pray through requests (also in the Daily Walk) and record how God answered
+- **Daily reminder**: add a recurring Google Calendar event or .ics file, or turn on an INRI notification (Android, installed app)
 - Morning & Night prayers
 - Full King James Version Bible reader
 - Private journal (stored only on your device)

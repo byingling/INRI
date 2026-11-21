@@ -75,6 +75,8 @@ const Walk = (function() {
       speak: 'Let us pray. ' + prayer.text
     });
 
+    if (typeof walkIntercessionPage === 'function') list.push(walkIntercessionPage());
+
     list.push({
       id: 'journal', label: 'Write',
       html: '<h2 class="walk-h">Your response</h2>' +
@@ -265,7 +267,7 @@ function afterNavigate(page) {
   applyAtmosphere(page === 'morning' ? 'dawn' : page === 'night' ? 'night' : null);
   revealVerses(contentEl);
   Ambient.updateButton();
-  if (page === 'settings') renderImmersiveSettings();
+  if (page === 'settings') { renderImmersiveSettings(); if (typeof renderReminderSettings === 'function') renderReminderSettings(); }
 }
 
 function renderImmersiveSettings() {

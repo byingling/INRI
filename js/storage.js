@@ -732,13 +732,7 @@ const TOPICAL_VERSES = {
 
 // Verse highlights: { "kjv:john:3:16": true, ... }
 function getHighlights() { return STORAGE.get('highlights', {}); }
-function toggleHighlight(key) {
-  const h = getHighlights();
-  if (h[key]) delete h[key]; else h[key] = true;
-  STORAGE.set('highlights', h);
-  return !!h[key];
-}
-function isHighlighted(key) { return !!getHighlights()[key]; }
+// setHighlight / getHighlight / isHighlighted live in bible-plus.js (colored highlights)
 
 // Custom plans stored alongside READING_PLANS usage
 function getCustomPlans() { return STORAGE.get('customPlans', []); }
